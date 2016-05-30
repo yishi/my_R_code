@@ -1,0 +1,114 @@
+
+#  practical data science cookbook
+# chapter 2 driving visual analysis with automobile data
+
+library(plyr)
+library(ggplot2)
+library(reshape2)
+
+mpg <- read.csv("test/vehicles.csv", stringsAsFactors = FALSE)
+
+length(unique(mpg$year))  
+table(mpg$year) 
+
+table(mpg$fuelType1)  
+table(mpg$trany)  
+
+mpg$trany2 <- substr(mpg$trany, 1, 4) 
+table(mpg$trany2)
+
+with(mpg, table(sCharger, year))
+table(mpg$sCharge)
+
+str(mpg$sCharge)
+table(mpg$sCharge)
+unique(mpg$sCharger)
+table(mpg$tCharger)
+unique(mpg$tcharger)
+
+mpgByYr <- ddply(mpg, ~year, summarise, avgMpg = mean(comb08), 
+                 avgHghy = mean(highway08), avgCity = mean(city08))
+head(mpgByYr)
+
+ggplot(mpgByYr, aes(x = year, y = avgMpg)) +
+  geom_point() +
+  geom_smooth()
+
+gasCars <- subset(mpg, fuelType1 %in% c("Regular Gasoline", 
+                                        "Premium Gasoline", "Midgrade Gasoline") &
+                    fuelType2 == "" & atvType != "Hybrid")
+dim(gasCars)
+
+mpgByYr_gas <- ddply(gasCars, ~year, summarise, avgMpg = mean(comb08), 
+                     avgHghy = mean(highway08), avgCity = mean(city08))
+
+ggplot(mpgByYr_gas, aes(x = year, y = avgMpg)) +
+  geom_point() +
+  geom_smooth()
+
+str(gasCars$displ)
+
+ggplot(gasCars, aes(x = displ, y = comb08)) +
+  geom_point() +
+  geom_smooth()
+
+avgCarSize <- ddply(gasCars, ~ year, summarise, avgDisp = mean(displ))
+
+ggplot(avgCarSize, aes(x = year, y = avgDisp)) +
+  geom_point() +
+  geom_smooth()
+
+byYear <- ddply(gasCars, ~ year, summarise, avgmpg = mean(comb08), avgdispl = mean(displ))
+
+ggplot(byYear, aes(x = year)) +
+  geom_point(aes(x = year, y = avgmpg), colour = "red") +
+  geom_smooth(aes(x = year, y = avgmpg), colour = "red") +
+  geom_point(aes(x = year, y = avgdispl), colour = "blue") +
+  geom_smooth(aes(x = year, y = avgdispl), colour = "blue")
+
+
+byYear2 <- melt(byYear, id = "year")
+
+ggplot(byYear2, aes(x = year, y = value, colour = variable)) +
+  geom_point() +
+  geom_smooth()
+
+ggplot(byYear2, aes(x = year, y = value)) +
+  geom_point() +
+  geom_smooth() +
+  facet_grid(variable ~ ., scales = "free_y")
+
+ggplot(byYear2, aes(x = year, y = value)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~variable, ncol = 1, scales = "free_y")
+
+table(gasCars$cylinders)
+gasCars4 <- subset(gasCars, cylinders == "4")
+
+ggplot(gasCars4, aes(x = factor(year), y = comb08)) +
+  geom_boxplot() +
+  facet_wrap( ~ trany2, ncol = 1) +
+  theme(axis.text.x = element_text(angle = 45))
+
+ggplot(gasCars4, aes(x = factor(year), fill = factor(trany2))) +
+  geom_bar(position = "fill") +
+  labs(x = "year", y = "proportion of cars", fill = "transmission") +
+  geom_hline(yintercept = 0.5, linetype = 2) +
+  theme(axis.text.x = element_text(angle = 45))
+
+carsMake <- ddply(gasCars4, ~ year, summarise, number_of_makes = length(unique(make)))
+
+ggplot(carsMake, aes(x = year, y = number_of_makes)) +
+  geom_point() 
+
+uniqMakes <- dlply(gasCars4, ~ year, function(x) unique(x$make))  
+commonMakes <- Reduce(intersect, uniqMakes[1:31])
+
+gasCars4_commonMakes <- subset(gasCars4, make %in% commonMakes)
+
+avgMPG_commonMake <- ddply(gasCars4_commonMakes, ~year +make, summarise, avgMPG = mean(comb08))
+
+ggplot(avgMPG_commonMake, aes(x = year, y = avgMPG)) +
+  geom_line() +
+  facet_wrap(~ make)
