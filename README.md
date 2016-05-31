@@ -6,7 +6,7 @@ Recently, I read the book - Practical Data Science Cookbook.
 
 So, I practice my code capacity not only in R but also in Python.
 
-I use the automobile [data](http://www.fueleconomy.gov/feg/epadata/vehicles.csv.zip) from U.S. Department of Energy to do data analysis, which is the example from the chapter 2 of the book, the R code is in this directory, the Python code in [here](http://nbviewer.jupyter.org/github/yishi/Data-Analysis-Series-in-Python/blob/master/Data_Analysis_Series_VI.ipynb).
+I use the automobile [**data**](http://www.fueleconomy.gov/feg/epadata/vehicles.csv.zip) from U.S. Department of Energy to do data analysis, which is the example from the chapter 2 of the book, the R code is in this directory, the Python code is in [**here**](http://nbviewer.jupyter.org/github/yishi/Data-Analysis-Series-in-Python/blob/master/Data_Analysis_Series_VI.ipynb).
 
 I also save my R code, which is from the example of the chapter 5 of the book, mainly use the package dplyr and data.table to deal with this socalled middle size of data, which could fit the memory of our laptop computer, but maybe kill our programming time.
 
