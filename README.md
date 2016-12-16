@@ -19,7 +19,8 @@ Several days ago, I discover a new package about text mining, **text2vec**, this
 Below is a flowchart about text mining.
 
 text data
-  |
+  
+  |  
 segmentation（for chinese text）jiebaR package
   |
 transform to structural data, such as matrix, use text2vec package, English text could split the sentence to word in this package, which is similar to segmentation
@@ -36,7 +37,8 @@ tf-idf：increase the weight of terms which are specific and decrease the weight
 use model, such as sentiment analysis, use classification model, to predict positive or negative
 
 
-chinese version flowchart
+chinese version flowchart  
+
 文本
   |
 分词（针对中文）jiebaR
