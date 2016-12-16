@@ -20,20 +20,20 @@ Below is a flowchart about text mining.
 
 text data  
   |  
-segmentation（for chinese text）jiebaR package  
+**segmentation**（for chinese text）jiebaR package  
   |  
 transform to structural data, such as matrix, use text2vec package, English text could split the sentence to word in this package, which is similar to segmentation  
-1. data clean  
+1. **data clean**  
 first of all, delete stop words  
 second, choose the number of the word to make vector, n-gram  
 third, delete very common and very unusual terms  
 fourth, whether to use hashing trick, which could shorten the run time when there have large collections of documents  
 fifth, make a document-term matrix  
-2. transform document-term matrix  
+2. **transform document-term matrix**  
 normalization：decrease the influence of the lengths of the documents  
 tf-idf：increase the weight of terms which are specific and decrease the weight for terms used in most documents    
 |  
-use model, such as sentiment analysis, use classification model, to predict positive or negative
+use **model**, such as sentiment analysis, use classification model, to predict positive or negative
 
 
 chinese version flowchart  
@@ -43,7 +43,7 @@ chinese version flowchart
   分词（针对中文）jiebaR  
   |  
   转换成结构化的数据，如矩阵  text2vec包  （英文可以直接在这里把词分离开，相当于分词)  
-  1 进行数据清洗  
+  1. 进行数据清洗  
   首先，删除停用词，  
   其次，选择使用词的个数，n-gram  
   第三，删除大量常出现的无用词，删除少量偶尔出现的词   
