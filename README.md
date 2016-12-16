@@ -18,21 +18,21 @@ Several days ago, I discover a new package about text mining, **text2vec**, this
 
 Below is a flowchart about text mining.
 
-text data
-    |  
-segmentation（for chinese text）jiebaR package
-    |
-transform to structural data, such as matrix, use text2vec package, English text could split the sentence to word in this package, which is similar to segmentation
-1. data clean
-first of all, delete stop words
-second, choose the number of the word to make vector, n-gram
-third, delete very common and very unusual terms
-fourth, whether to use hashing trick, which could shorten the run time when there have large collections of documents
-fifth, make a document-term matrix
-2. transform document-term matrix
-normalization：decrease the influence of the lengths of the documents
-tf-idf：increase the weight of terms which are specific and decrease the weight for terms used in most documents  
+text data  
+  |  
+segmentation（for chinese text）jiebaR package  
   |
+transform to structural data, such as matrix, use text2vec package, English text could split the sentence to word in this package, which is similar to segmentation  
+1. data clean  
+first of all, delete stop words  
+second, choose the number of the word to make vector, n-gram  
+third, delete very common and very unusual terms  
+fourth, whether to use hashing trick, which could shorten the run time when there have large collections of documents  
+fifth, make a document-term matrix  
+2. transform document-term matrix  
+normalization：decrease the influence of the lengths of the documents  
+tf-idf：increase the weight of terms which are specific and decrease the weight for terms used in most documents    
+|  
 use model, such as sentiment analysis, use classification model, to predict positive or negative
 
 
