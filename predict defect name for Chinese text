@@ -1,0 +1,137 @@
+#################################################
+## 使用缺陷描述，预测缺陷部位
+#################################################
+
+
+# get data 
+data <- read.csv('defect_name_20161209.csv', stringsAsFactors = FALSE)
+
+# get defect description text 
+text <- data$"原句子"
+
+
+##############################
+### segment sentence
+##############################
+library(jiebaR)
+# segment sentence
+cutter <- worker(byline = TRUE, 
+                 user = "D:/application/R/library/jiebaRD/dict/user.dict.electricity.utf8")
+text_seg <- segment(text, cutter)
+text_seg[[1]]
+text[1]
+
+# get keyword
+# modify keyword could modify idf dict 
+# keyworker = worker("keywords", 
+#                    idf = "D:/application/R/library/jiebaRD/dict/idf.electricity.utf8")
+keyworker = worker("keywords")
+keyword <- lapply(text_seg, function(x) {
+  vector_keywords(x, keyworker)
+})
+
+keyword[[1]]
+text_seg[[2]]
+text[2]
+keyword[[2]]
+
+# segment and get keyword 
+# not use user dict
+simhasher = worker("simhash",topn=5)
+simhasher <= text[1]
+distance(text[1], text[2], simhasher)
+
+
+##############################
+### construct a document-term matrix
+##############################
+library(text2vec)
+
+# random seed
+set.seed(2016L)
+# split data to train and test 
+all_ids <- 1 : length(text)
+train_ids <- sample(all_ids, round(length(text) * 0.8))
+test_ids <- setdiff(all_ids, train_ids)
+train <- text_seg[train_ids]
+test <- text_seg[test_ids]
+
+# vocabulary-based vectorization
+it_train <- itoken(train, progressbar = FALSE)
+vocab = create_vocabulary(it_train)
+vocab
+
+# construct a document-term matrix
+vectorizer <- vocab_vectorizer(vocab)
+dtm_train <- create_dtm(it_train, vectorizer)
+dim(dtm_train)
+
+
+##############################
+### fit a model
+##############################
+# fit a logistic regression model 
+# with an L1 penalty and 4 fold cross-validation
+
+# delete space in the word and transform character to factor
+y <- factor(gsub(' ', '', data[['缺陷部位1']]))
+levels(y)
+y_n <- as.numeric(y)
+
+y_train <- y_n[train_ids]
+y_test <- y_n[test_ids]
+
+library(glmnet)
+glmnet_classifier <- cv.glmnet(x = dtm_train, y = y_train,
+                               family = 'multinomial', 
+                               type.measure = 'mse', 
+                               nfolds = 3)
+print(paste("min Mean Squared Error =", round(min(glmnet_classifier$cvm), 4)))
+# "min Mean Squared Error = 0.1331"
+
+# glmnet_classifier <- cv.glmnet(x = dtm_train, y = y_train,
+#                                family = 'multinomial', 
+#                                type.measure = 'class', 
+#                                nfolds = 3)
+# print(paste("min misclassification Error =", round(min(glmnet_classifier$cvm), 4)))
+# # "min misclassification Error = 0.0715"
+# 1 - min(glmnet_classifier$cvm)
+# # 0.9285177
+
+# check the model's performance on test data 
+# Note that most text2vec functions are pipe friendly!
+it_test = test %>% 
+  itoken(progressbar = FALSE)
+
+dtm_test = create_dtm(it_test, vectorizer)
+
+preds = predict(glmnet_classifier, dtm_test, type = 'class')[, 1]
+sum(y_test == as.numeric(preds))/length(preds)
+# 0.936747
+table(y_test, as.numeric(preds))
+# y   1   2   3   4   5
+# 1 126   0   1   2   1
+# 2   2  33   0   0   1
+# 3   3   0  59   0   0
+# 4   3   0   0  50   0
+# 5   8   0   0   0  43
+
+preds = predict(glmnet_classifier, dtm_test, type = 'class', 
+                s = glmnet_classifier$lambda.1se)[, 1]
+sum(y_test == as.numeric(preds))/length(preds)
+
+logis <- glmnet(x = dtm_train, y = y_train, 
+                family = 'multinomial')
+
+pred_train <- predict(logis, dtm_train, type = 'class')[, 1]
+sum(y_train == as.numeric(pred_train))/length(pred_train)
+# 0.34
+pred_test <- predict(logis, dtm_test, type = 'class', 
+                     s = glmnet_classifier$lambda.1se)[, 1]
+sum(y_test == as.numeric(pred_test))/length(pred_test)
+# 0.39
+
+glmnet_classifier$lambda.1se
+[1] 0.01006668
+glmnet_classifier$lambda.min
+[1] 0.004159563
