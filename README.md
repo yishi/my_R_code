@@ -14,7 +14,7 @@ I also save my R code, which is from the example of the chapter 5 of the book, m
 We always talk about big data, TB, PB, but I think we had better sharpen our skills using middle data first, such as data clean, data transformation, make prediction or classification or some other models, compare these models and choose the best, then deploy this model and to test it in the real scene.
 
 ########################################### December 2016 ###############################
-Several days ago, I discover a new package about text mining, **text2vec**, this package is great, I use this package and other packages to predict the defect name from the defect description text, this idea if similar to sentiment analysis, just change response variable Y values from positive/negative to defect name1/2/3/...
+Several days ago, I discover a new package about text mining, **text2vec**, this package is great, I use this package and other packages to predict the defect name from the defect description text, this idea is similar to sentiment analysis, just change response variable Y values from positive/negative to defect name1/2/3/...
 
 Below is a flowchart about text mining.
 
