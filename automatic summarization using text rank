@@ -1,0 +1,65 @@
+##########################################################
+### Automatic Summarization using TextRank
+### http://joshbohde.com/blog/document-summarization
+### https://www.biaodianfu.com/automatic-text-summarizer.html
+### http://blog.csdn.net/bigdata_wang/article/details/44187691
+
+library(text2vec)
+library(igraph)
+
+text_ch <- readLines('elec_news.txt', encoding = "UTF-8")
+
+# delete </p> or <p> or <strong>
+text_clean <- gsub("<[/a-z]+>", '', text_ch)
+# split into sentence
+sentence <- unlist(strsplit(text_clean, '。'))
+
+# load R function
+source('f_segment_ch.R')
+# 
+# library(jiebaR)
+# f_segment_ch <- function(text, type = "mix", 
+#                          user_dict_path = "D:/application/R/library/jiebaRD/dict/user.dict.electricity.utf8",
+#                          stop_word_path = "D:/application/R/library/jiebaRD/dict/stop_words_user.utf8") {
+#   
+#   # segment sentence
+#   cutter <- worker(type = type, byline = TRUE, 
+#                    user = user_dict_path, 
+#                    stop_word = stop_word_path)
+#   segment(text, cutter)
+#   
+# }
+
+# segment sentence
+text_seg <- f_segment_ch(text = sentence)
+
+# vocabulary-based vectorization
+it <- itoken(text_seg, progressbar = FALSE)
+vocab = create_vocabulary(it, stopwords = " ")
+
+pruned_vocab = prune_vocabulary(vocab, 
+                                term_count_min = 10, 
+                                doc_proportion_max = 0.8,
+                                doc_proportion_min = 0.001)
+vectorizer = vocab_vectorizer(pruned_vocab)
+
+#vectorizer <- vocab_vectorizer(vocab)
+
+# construct a document-term matrix
+dtm <- create_dtm(it, vectorizer)
+# define tfidf model
+tfidf = TfIdf$new()
+# fit model to train data and transform train data with fitted model
+dtm_tfidf = as.matrix(fit_transform(dtm, tfidf))
+#similarity matrix
+similarity <- dtm_tfidf %*% t(dtm_tfidf)
+
+# convert to a graph
+g <- graph.adjacency(similarity, weighted=T, mode = "undirected")
+
+# page rank
+score <- page.rank(g)$vector
+
+sentence_order <- sentence[as.numeric(names(sort(score, decreasing = TRUE)))]
+
+sentence_order[1:5]
