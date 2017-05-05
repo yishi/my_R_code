@@ -135,3 +135,139 @@ glmnet_classifier$lambda.1se
 [1] 0.01006668
 glmnet_classifier$lambda.min
 [1] 0.004159563
+
+#####################################################################
+library(jiebaR)
+
+f_segment_ch <- function(text, type = "mix", 
+                         user_dict_path = "D:/application/R/library/jiebaRD/dict/user.dict.electricity.utf8",
+                         stop_word_path = "rename the file in the STOPPATH") {
+  
+  # segment sentence
+  cutter <- worker(type = type, byline = TRUE, 
+                   user = user_dict_path, 
+                   stop_word = stop_word_path)
+  segment(text, cutter)
+
+}
+
+
+####  train the models #########################
+f_logis_save <- function(dataset, x_col_name, y_col_name, model_name) {
+  
+  tryCatch(
+    expr = {
+      
+      library(text2vec)
+      library(glmnet)
+      
+      # choose data 
+      data <- read.csv(dataset, stringsAsFactors = FALSE)
+      #  data <- read.csv('defect_name_20161209.csv', stringsAsFactors = FALSE)
+      # choose x col
+      #  text = data$"原句子"
+      text <- subset(data, select = x_col_name, drop = TRUE)
+      # chooose y col 
+      #  y_col = data[['缺陷部位3']]
+      y_col = subset(data, select = y_col_name, drop = TRUE)
+      
+      
+      #  deal with few y value which frequency < = min_num
+      min_num <- round(nrow(data) * 0.01)
+      temp_y <- table(y_col)
+      add_y_name <- names(temp_y)[unname(temp_y) < min_num]
+      # add new cols 
+      new_data <- data
+      for(i in add_y_name) {
+        short_index <- which(y_col == i)
+        add_index <- rep(short_index, length.out = min_num)
+        new_data <- rbind(new_data, data[add_index, ])
+      }
+      
+      # renew x y col
+      # text = new_data$"原句子"
+      # y_col = new_data[['缺陷部位3']]
+      text <- subset(new_data, select = x_col_name, drop = TRUE)
+      y_col = subset(new_data, select = y_col_name, drop = TRUE)
+      
+      # load R function
+      source('f_segment_ch.R')
+      # segment sentence
+      train <- f_segment_ch(text = text)
+      # vocabulary-based vectorization
+      it_train <- itoken(train, progressbar = FALSE)
+      vocab = create_vocabulary(it_train)
+      # construct a document-term matrix
+      vectorizer <- vocab_vectorizer(vocab)
+      dtm_train <- create_dtm(it_train, vectorizer)
+      
+      
+      # y variable
+      # delete space in the y value 
+      y <- factor(gsub(' ', '', y_col))
+      y_list <- levels(y)
+      y_train <- as.numeric(y)
+      
+      
+      ####################################
+      ### logis train
+      # train the model
+      glmnet_classifier <- cv.glmnet(x = dtm_train, 
+                                     y = y_train,
+                                     family = 'multinomial', 
+                                     type.measure = 'class', 
+                                     nfolds = 3)
+      
+      save(vectorizer, y_list, glmnet_classifier, file = model_name)
+      
+      list("Accuracy value" = 1 - round(min(glmnet_classifier$cvm), 4))
+      
+    },
+    
+    error = function(e) e
+    
+  )
+}
+
+################  prediction ############################
+
+library(jiebaR)
+library(text2vec)
+library(glmnet)
+
+
+f_old_logis_pred <- function(new_text, model_name) {
+  
+  # load R function
+  source('f_segment_ch.R')
+  # segment sentence
+  test <- f_segment_ch(text = new_text)
+  
+  # test data 
+  it_test = test %>% 
+    itoken(progressbar = FALSE)
+  
+  # load trained model and related file, such as vectorizer (vacabulary by trainset)
+  # and y_list (levels(y) by train y col)
+ 
+  #if (model_type == 1) {
+   # load("logis_model.RData")
+  #} else if(model_type == 2) {
+   # load("logis_model_2.RData")
+  #} else if(model_type == 3) {
+   # load("logis_model_3.RData")
+  #}
+  
+  load(model_name)
+  
+  dtm_test = create_dtm(it_test, vectorizer)
+  
+  # predict y value in the test set
+  preds = predict(glmnet_classifier, dtm_test, type = 'class', 
+                  s = "lambda.1se")[, 1]
+  
+  y_list[as.numeric(preds)]
+  
+}
+
+
