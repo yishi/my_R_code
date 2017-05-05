@@ -136,7 +136,9 @@ glmnet_classifier$lambda.1se
 glmnet_classifier$lambda.min
 [1] 0.004159563
 
-#####################################################################
+############################################################################################
+
+#########################    1. segment the text ###########################
 library(jiebaR)
 
 f_segment_ch <- function(text, type = "mix", 
@@ -152,7 +154,7 @@ f_segment_ch <- function(text, type = "mix",
 }
 
 
-####  train the models #########################
+#########################    2. train the models #########################
 f_logis_save <- function(dataset, x_col_name, y_col_name, model_name) {
   
   tryCatch(
@@ -229,7 +231,7 @@ f_logis_save <- function(dataset, x_col_name, y_col_name, model_name) {
   )
 }
 
-################  prediction ############################
+###############################      3. prediction     ###############################################
 
 library(jiebaR)
 library(text2vec)
@@ -269,5 +271,85 @@ f_old_logis_pred <- function(new_text, model_name) {
   y_list[as.numeric(preds)]
   
 }
+
+########################################## 4 use other models #########################################
+
+library(randomForest)
+library(gbm)
+
+kinds_model <- function(text, y_col) {
+  # text = raw_text
+  # delete spaces
+  y_col = gsub(' ', '', y_col)
+  # min number per subclass
+  min_num <- ceiling(length(y_col)*6/1000)
+  
+  min_num = ifelse(min_num < 9, 9, min_num)
+  
+  # deal with few subclass
+  if(length(which(table(y_col) < min_num)) != 0) {
+    # find which name has few times
+    add_item <- names(which(table(y_col) < min_num))
+    # find index which have few names
+    add_index = unlist(lapply(add_item, function(x) which(y_col == x)[1]))
+    # append x and y rows which has few times
+    text = append(text, text[rep(add_index, each = min_num)])
+    y_col = append(y_col, y_col[rep(add_index, each = min_num)])
+  }
+  
+  y <- factor(y_col)
+  y_list <- levels(y)
+  y_train <- as.numeric(y)
+  
+  # load R function
+  source('f_segment_ch.R')
+  # segment sentence
+  train <- f_segment_ch(text = text)
+  
+  # vocabulary-based vectorization
+  it_train <- itoken(train, progressbar = FALSE)
+  vocab = create_vocabulary(it_train)
+  # construct a document-term matrix
+  vectorizer <- vocab_vectorizer(vocab)
+  dtm_train <- create_dtm(it_train, vectorizer)
+  
+  data_pred <- list("dtm_train" = dtm_train, "y_train" = y_train, "y_list" = y_list)
+  
+  glmnet_classifier <- cv.glmnet(x = data_pred[["dtm_train"]], 
+                                 y = data_pred[["y_train"]],
+                                 family = 'multinomial', 
+                                 type.measure = 'class', 
+                                 nfolds = 3)
+  glmnet_classifier
+  
+  
+  #############
+  data_pred <- list("dtm_train" = as.matrix(dtm_train), "y_train" = y, "y_list" = y_list)
+  
+  randomForest_classifier <- randomForest(x = data_pred[["dtm_train"]], 
+                                          y = data_pred[["y_train"]])
+  
+  randomForest_classifier
+  
+  ####################  boosting
+  data_df <- data.frame(as.matrix(dtm_train))
+  data_df['y'] <- y
+  
+  boost_classifier <- gbm(y ~ ., data = data_df, cv.folds = 3, 
+                          distribution = "multinomial")
+  boost_classifier
+  summary(boost_classifier) 
+  
+  ################## artificial neural networks
+  bayes_classifier <- naiveBayes(as.matrix(dtm_train), y)
+  summary(bayes_classifier)
+  
+  
+}
+
+
+
+
+
 
 
